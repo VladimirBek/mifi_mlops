@@ -42,7 +42,9 @@ jobs:
       - name: Data pipeline + validation (DVC)
         run: |
           # Runs your DVC pipeline locally (no remote creds required)
-          dvc repro --no-scm
+          dvc pull -q || true
+          dvc repro --no-commit
+          dvc repro
 
       - name: Security scan (Bandit)
         run: |
