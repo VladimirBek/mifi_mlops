@@ -15,7 +15,13 @@ class Schema:
     target: str = "default"
     categorical: Tuple[str, ...] = ("SEX", "EDUCATION", "MARRIAGE", "AGE_BIN")
     numeric_prefixes: Tuple[str, ...] = ("PAY_", "BILL_AMT", "PAY_AMT")
-    numeric_always: Tuple[str, ...] = ("LIMIT_BAL", "AGE", "BILL_AMT_SUM", "PAY_AMT_SUM", "PAY_RATIO")
+    numeric_always: Tuple[str, ...] = (
+        "LIMIT_BAL",
+        "AGE",
+        "BILL_AMT_SUM",
+        "PAY_AMT_SUM",
+        "PAY_RATIO",
+    )
 
 
 def split_xy(df: pd.DataFrame, schema: Schema) -> Tuple[pd.DataFrame, pd.Series]:
