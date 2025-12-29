@@ -76,7 +76,11 @@ def main() -> None:
     p1 = Path(args.onnx_path)
     p2 = Path(args.onnx_int8_path)
     out = {
-        "onnx": {"path": str(p1), "size_bytes": p1.stat().st_size if p1.exists() else None, "roc_auc": auc_onnx},
+        "onnx": {
+            "path": str(p1),
+            "size_bytes": p1.stat().st_size if p1.exists() else None,
+            "roc_auc": auc_onnx,
+        },
         "onnx_int8": {
             "path": str(p2),
             "size_bytes": p2.stat().st_size if p2.exists() else None,

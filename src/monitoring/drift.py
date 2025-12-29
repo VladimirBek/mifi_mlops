@@ -1,10 +1,9 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import joblib
-import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
@@ -21,7 +20,9 @@ class DriftConfig:
     perf_auc_threshold: float = 0.65
 
 
-def _split_columns(df: pd.DataFrame, target_col: str, prediction_col: str, proba_col: str) -> Tuple[List[str], List[str]]:
+def _split_columns(
+    df: pd.DataFrame, target_col: str, prediction_col: str, proba_col: str
+) -> Tuple[List[str], List[str]]:
     drop_cols = {target_col, prediction_col, proba_col}
     features = [c for c in df.columns if c not in drop_cols]
     cat = [c for c in features if df[c].dtype == "object"]
@@ -90,10 +91,12 @@ def run_evidently_report(
     combined = pd.concat([reference, current], ignore_index=True)
     cm = build_column_mapping(combined, cfg)
 
-    report = Report([
-        DataDriftPreset(),
-        ClassificationPreset(),
-    ])
+    report = Report(
+        [
+            DataDriftPreset(),
+            ClassificationPreset(),
+        ]
+    )
 
     evaluation = report.run(current_data=current, reference_data=reference, column_mapping=cm)
 
@@ -107,18 +110,27 @@ def run_evidently_report(
     evaluation.save(str(snapshot_path))
 
     # Извлекаем агрегаты из dict-формата
-    # Примечание: структура может меняться между версиями; поэтому делаем максимально устойчивый парсинг.
+    # Примечание: структура может меняться между версиями,
+    # поэтому используем максимально устойчивый парсинг.
     d = evaluation.dict()
 
-    drift_share = _safe_get(d, [
-        ("metrics", 0, "result", "share_of_drifted_columns"),
-        ("metrics", 0, "result", "drift_share"),
-    ], default=None)
+    drift_share = _safe_get(
+        d,
+        [
+            ("metrics", 0, "result", "share_of_drifted_columns"),
+            ("metrics", 0, "result", "drift_share"),
+        ],
+        default=None,
+    )
 
-    dataset_drift = _safe_get(d, [
-        ("metrics", 0, "result", "dataset_drift"),
-        ("metrics", 0, "result", "dataset_drift_detected"),
-    ], default=None)
+    dataset_drift = _safe_get(
+        d,
+        [
+            ("metrics", 0, "result", "dataset_drift"),
+            ("metrics", 0, "result", "dataset_drift_detected"),
+        ],
+        default=None,
+    )
 
     out_metrics: Dict[str, float] = {}
 
@@ -127,13 +139,19 @@ def run_evidently_report(
     if dataset_drift is not None:
         out_metrics["dataset_drift"] = float(bool(dataset_drift))
 
-    # Если ground truth есть — Evidently тоже считает performance, но мы дополнительно считаем своими метриками.
+    # Если ground truth есть — Evidently тоже считает performance.
+    # Дополнительно считаем метрики самостоятельно.
     perf = compute_perf_metrics(current, cfg)
-    out_metrics.update({f"perf_{k}": float(v) for k, v in perf.items() if v == v})  # v==v -> not NaN
+    out_metrics.update(
+        {f"perf_{k}": float(v) for k, v in perf.items() if v == v}
+    )  # v==v -> not NaN
 
     # Пишем удобный summary
     summary_path = out_dir / f"{name_prefix}_summary.json"
-    summary_path.write_text(json.dumps(out_metrics, ensure_ascii=False, indent=2), encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(out_metrics, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     return out_metrics
 
 

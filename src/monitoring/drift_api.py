@@ -15,6 +15,7 @@ g_drift_share = Gauge("credit_drift_share", "Доля дрейфующих пр�
 g_dataset_drift = Gauge("credit_dataset_drift", "Флаг dataset drift (Evidently, 0/1)")
 g_perf_auc = Gauge("credit_model_roc_auc", "ROC-AUC на текущих данных (если есть target)")
 
+
 def _load_metrics() -> Dict[str, float]:
     if not METRICS_PATH.exists():
         return {}
@@ -23,9 +24,11 @@ def _load_metrics() -> Dict[str, float]:
     except Exception:
         return {}
 
+
 @app.get("/health")
 def health():
     return {"status": "ok", "metrics_path": str(METRICS_PATH)}
+
 
 @app.get("/metrics")
 def metrics():

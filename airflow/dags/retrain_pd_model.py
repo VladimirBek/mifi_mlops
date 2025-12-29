@@ -19,7 +19,6 @@ FORCE_RETRAIN = os.environ.get("FORCE_RETRAIN", "0") == "1"
 DATA_TRIGGER_PATH = os.environ.get("DATA_TRIGGER_PATH", f"{PROJECT_DIR}/data/drift/new_data.flag")
 
 
-
 def _read_json(path: str) -> dict:
     p = Path(path)
     if not p.exists():
@@ -105,7 +104,8 @@ with DAG(
             "cd $PROJECT_DIR && "
             "dvc repro --no-scm train && "
             "python -m src.models.train_nn_onnx --data-path data/processed/credit.csv "
-            "--model-path models/nn_model.joblib --onnx-path models/nn_model.onnx && rm -f data/drift/new_data.flag"
+            "--model-path models/nn_model.joblib --onnx-path models/nn_model.onnx "
+            "&& rm -f data/drift/new_data.flag"
         ),
     )
 

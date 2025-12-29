@@ -39,7 +39,12 @@ def extract_proba_from_onnx_outputs(outputs) -> np.ndarray:
         return np.asarray(out, dtype=float)
 
     # Иногда probs приходит как np.ndarray(dtype=object) с dict
-    if isinstance(probs, np.ndarray) and probs.dtype == object and probs.size > 0 and isinstance(probs.flat[0], dict):
+    if (
+        isinstance(probs, np.ndarray)
+        and probs.dtype == object
+        and probs.size > 0
+        and isinstance(probs.flat[0], dict)
+    ):
         out = []
         for d in probs.ravel():
             if 1 in d:
@@ -57,7 +62,6 @@ def extract_proba_from_onnx_outputs(outputs) -> np.ndarray:
 
     # 3) Если уже (N,)
     return probs.reshape(-1).astype(float)
-
 
 
 def main() -> None:

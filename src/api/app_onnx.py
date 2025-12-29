@@ -28,13 +28,17 @@ HTTP_REQUEST_DURATION_SECONDS = Histogram(
     labelnames=("method", "path"),
 )
 
+
 @app.middleware("http")
 async def _metrics_middleware(request, call_next):
     start = time.time()
     response = await call_next(request)
-    HTTP_REQUEST_DURATION_SECONDS.labels(request.method, request.url.path).observe(time.time() - start)
+    HTTP_REQUEST_DURATION_SECONDS.labels(request.method, request.url.path).observe(
+        time.time() - start
+    )
     HTTP_REQUESTS_TOTAL.labels(request.method, request.url.path, str(response.status_code)).inc()
     return response
+
 
 @app.get("/metrics")
 def metrics() -> Response:
@@ -153,7 +157,6 @@ def health() -> Dict[str, Any]:
 
 @app.post("/predict")
 def predict(payload: CreditFeatures) -> Dict[str, Any]:
-    global SESSION
     if SESSION is None:
         raise HTTPException(status_code=500, detail="ONNX session not initialized")
 

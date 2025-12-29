@@ -65,7 +65,11 @@ def main() -> None:
 
     # Быстрая sanity-check валидация на 200 строках (чтобы закрыть пункт качественно)
     df = pd.read_csv("data/processed/credit.csv")
-    X = df.drop(columns=["default"]).sample(n=min(200, len(df)), random_state=3).reset_index(drop=True)
+    X = (
+        df.drop(columns=["default"])
+        .sample(n=min(200, len(df)), random_state=3)
+        .reset_index(drop=True)
+    )
 
     sess_orig = ort.InferenceSession(src.as_posix(), providers=["CPUExecutionProvider"])
     sess_int8 = ort.InferenceSession(dst.as_posix(), providers=["CPUExecutionProvider"])
@@ -75,7 +79,9 @@ def main() -> None:
     p_int8 = extract_proba(sess_int8.run(None, inputs))
 
     diff = np.abs(p_orig - p_int8)
-    print(f"Sanity check (200 rows): max_abs_diff={diff.max():.6f}, mean_abs_diff={diff.mean():.6f}")
+    print(
+        f"Sanity check (200 rows): max_abs_diff={diff.max():.6f}, mean_abs_diff={diff.mean():.6f}"
+    )
 
     # Для quantization допускаем маленькие отличия
     assert diff.max() < 0.05, "Quantized model deviates too much (max diff)."

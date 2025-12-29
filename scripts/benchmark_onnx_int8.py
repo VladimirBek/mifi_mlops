@@ -46,8 +46,12 @@ def main() -> None:
     batch = X.sample(n=min(args.batch_size, len(X)), random_state=1).reset_index(drop=True)
     inputs = to_onnx_inputs(batch)
 
-    sess_orig = ort.InferenceSession(Path(args.onnx_orig).as_posix(), providers=["CPUExecutionProvider"])
-    sess_int8 = ort.InferenceSession(Path(args.onnx_int8).as_posix(), providers=["CPUExecutionProvider"])
+    sess_orig = ort.InferenceSession(
+        Path(args.onnx_orig).as_posix(), providers=["CPUExecutionProvider"]
+    )
+    sess_int8 = ort.InferenceSession(
+        Path(args.onnx_int8).as_posix(), providers=["CPUExecutionProvider"]
+    )
 
     def orig_call():
         _ = sess_orig.run(None, inputs)

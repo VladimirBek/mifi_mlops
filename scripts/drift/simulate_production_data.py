@@ -31,7 +31,9 @@ def inject_drift(df: pd.DataFrame, seed: int = 42) -> pd.DataFrame:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Симуляция новых прод-данных для дрифт мониторинга")
+    parser = argparse.ArgumentParser(
+        description="Симуляция новых прод-данных для дрифт мониторинга"
+    )
     parser.add_argument("--data-path", default="data/processed/credit.csv")
     parser.add_argument("--out-path", default="data/drift/current.csv")
     parser.add_argument("--rows", type=int, default=2000)
@@ -42,7 +44,10 @@ def main() -> None:
     df = pd.read_csv(args.data_path)
     # Берём "тестовую" часть как псевдо-текущие данные
     train_df, test_df = train_test_split(
-        df, test_size=0.2, random_state=args.seed, stratify=df["default"] if "default" in df.columns else None
+        df,
+        test_size=0.2,
+        random_state=args.seed,
+        stratify=df["default"] if "default" in df.columns else None,
     )
 
     cur = test_df.sample(n=min(args.rows, len(test_df)), random_state=args.seed)
