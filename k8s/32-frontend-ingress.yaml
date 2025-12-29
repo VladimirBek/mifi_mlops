@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: credit-frontend-ingress
+  namespace: credit-scoring
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: credit.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: credit-frontend-svc
+                port:
+                  number: 80

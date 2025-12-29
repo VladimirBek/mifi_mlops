@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-frontend
+  namespace: credit-scoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-frontend
+  template:
+    metadata:
+      labels:
+        app: credit-frontend
+    spec:
+      containers:
+        - name: web
+          image: credit-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80

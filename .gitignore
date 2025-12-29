@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+mlruns/
+data/raw/
+data/processed/
+models/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+.dvc/cache/

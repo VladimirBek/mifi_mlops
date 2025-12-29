@@ -1,0 +1,7 @@
+prepare:
+  sample_rows: 0  # 0 = full dataset
+
+train:
+  test_size: 0.2
+  random_state: 42
+  n_iter_search: 10

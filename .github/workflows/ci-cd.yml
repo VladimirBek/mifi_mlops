@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint (flake8)
+        run: |
+          flake8 .
+
+      - name: Format check (black)
+        run: |
+          black --check .
+
+      - name: Prepare data (download + feature engineering)
+        run: |
+          python -m src.data.make_dataset --raw-path data/raw/default_credit.xls --processed-path data/processed/credit.csv
+
+      - name: Validate data (Great Expectations)
+        run: |
+          python -m src.data.validation --data-path data/processed/credit.csv --suite-path data/expectations/credit_suite.json
+
+      - name: Run tests
+        run: |
+          pytest -q

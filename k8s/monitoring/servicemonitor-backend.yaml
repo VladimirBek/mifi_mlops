@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: credit-backend
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: credit-backend
+  namespaceSelector:
+    matchNames:
+      - credit-scoring
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

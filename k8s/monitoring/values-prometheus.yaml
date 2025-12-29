@@ -1,0 +1,8 @@
+grafana:
+  defaultDashboardsEnabled: true
+  adminPassword: "admin"  # для учебных целей; в проде хранить в Secret
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false

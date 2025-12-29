@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-backend-canary
+  namespace: credit-scoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-backend
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: credit-backend
+        version: canary
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/REPLACE/REPLACE-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: credit-backend-config
+            - secretRef:
+                name: credit-backend-secrets
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 20

@@ -1,0 +1,70 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (default: commit SHA)"
+        required: false
+        default: ""
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}-backend
+  FRONTEND_IMAGE: ${{ github.repository }}-frontend
+  NAMESPACE: credit-scoring
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare kubeconfig (production)
+        run: |
+          mkdir -p ~/.kube
+          echo "${KUBECONFIG_B64}" | base64 -d > ~/.kube/config
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_PRODUCTION_B64 }}
+
+      - name: Ensure namespace
+        run: |
+          kubectl apply -f k8s/00-namespace.yaml
+
+      - name: Create/update image pull secret (GHCR)
+        run: |
+          kubectl -n $NAMESPACE create secret docker-registry ghcr-pull             --docker-server=ghcr.io             --docker-username="${{ secrets.GHCR_USERNAME }}"             --docker-password="${{ secrets.GHCR_TOKEN }}"             --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n $NAMESPACE patch serviceaccount default -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}' || true
+
+      - name: Deploy manifests
+        run: |
+          kubectl apply -f k8s/10-backend-configmap.yaml
+          kubectl apply -f k8s/11-backend-secret.yaml
+          kubectl apply -f k8s/20-backend-deployment.yaml
+          kubectl apply -f k8s/21-backend-service.yaml
+          kubectl apply -f k8s/22-backend-ingress.yaml
+          kubectl apply -f k8s/30-frontend-deployment.yaml
+          kubectl apply -f k8s/31-frontend-service.yaml
+          kubectl apply -f k8s/32-frontend-ingress.yaml
+
+      - name: Set images
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="${{ github.sha }}"; fi
+          kubectl -n $NAMESPACE set image deployment/credit-backend api=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:$TAG
+          kubectl -n $NAMESPACE set image deployment/credit-frontend web=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:$TAG
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n $NAMESPACE rollout status deployment/credit-backend --timeout=240s
+          kubectl -n $NAMESPACE rollout status deployment/credit-frontend --timeout=240s
+
+      - name: Monitor (smoke checks)
+        run: |
+          if [ -n "${{ secrets.PRODUCTION_HOST }}" ]; then
+            curl -fsS "http://${{ secrets.PRODUCTION_HOST }}/api/health"
+          else
+            echo "PRODUCTION_HOST is not set; skipping external HTTP check."
+          fi

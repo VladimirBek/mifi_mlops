@@ -1,0 +1,16 @@
+.git/
+.github/
+notebooks/
+tests/
+__pycache__/
+**/__pycache__/
+**/*.pyc
+
+# DVC cache can be large
+.dvc/cache/
+
+# Local data/models (built by dvc repro inside image)
+data/raw/
+data/processed/
+models/*.joblib
+models/*.onnx

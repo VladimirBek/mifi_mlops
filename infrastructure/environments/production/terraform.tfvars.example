@@ -1,0 +1,10 @@
+yc_token  = "PASTE_YC_IAM_TOKEN"
+cloud_id  = "your_cloud_id"
+folder_id = "your_folder_id"
+zone      = "ru-central1-a"
+
+vpc_cidr    = ["10.20.0.0/24"]
+k8s_version = "1.24"
+
+enable_gpu_nodes  = false
+allowed_ssh_cidrs = ["0.0.0.0/0"]

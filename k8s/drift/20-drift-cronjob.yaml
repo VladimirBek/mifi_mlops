@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: credit-drift-job
+  namespace: credit-scoring
+spec:
+  schedule: "*/30 * * * *"  # каждые 30 минут (для демо)
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: drift
+              image: credit-backend:latest
+              imagePullPolicy: IfNotPresent
+              command: ["python", "-m", "src.monitoring.drift_job",
+                        "--reference-path", "data/processed/credit.csv",
+                        "--current-path", "data/drift/current.csv",
+                        "--model-path", "models/model.joblib",
+                        "--out-dir", "/shared"]
+              volumeMounts:
+                - name: drift-vol
+                  mountPath: /shared
+          volumes:
+            - name: drift-vol
+              persistentVolumeClaim:
+                claimName: credit-drift-pvc

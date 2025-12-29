@@ -1,0 +1,5 @@
+yc_token  = "PASTE_YC_IAM_TOKEN"
+cloud_id  = "your_cloud_id"
+folder_id = "your_folder_id"
+zone      = "ru-central1-a"
+state_bucket_name = "tfstate-yourname-12345"

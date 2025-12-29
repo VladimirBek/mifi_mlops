@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: credit-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: credit-backend.rules
+      rules:
+        - alert: CreditBackendDown
+          expr: up{job="credit-backend"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "credit-backend недоступен"
+            description: "Prometheus не может собрать метрики с credit-backend более 2 минут."
+
+        - alert: CreditHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{job="credit-backend",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="credit-backend"}[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Высокая доля 5xx"
+            description: "Доля ответов 5xx > 5% за последние 5 минут."

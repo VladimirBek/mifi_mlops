@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: credit-backend-shadow
+  namespace: credit-scoring
+spec:
+  hosts:
+    - credit-backend-svc
+  http:
+    - route:
+        - destination:
+            host: credit-backend-svc
+            subset: stable
+          weight: 100
+      mirror:
+        host: credit-backend-svc
+        subset: canary
+      mirrorPercentage:
+        value: 100.0

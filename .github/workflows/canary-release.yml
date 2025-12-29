@@ -1,0 +1,72 @@
+name: Canary Release (Istio)
+
+on:
+  workflow_dispatch:
+    inputs:
+      canary_tag:
+        description: "Image tag for canary"
+        required: true
+      stable_tag:
+        description: "Image tag for stable"
+        required: false
+        default: "latest"
+      start_weight:
+        description: "Initial canary weight (percent)"
+        required: false
+        default: "10"
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}-backend
+  NAMESPACE: credit-scoring
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare kubeconfig (staging)
+        run: |
+          mkdir -p ~/.kube
+          echo "${KUBECONFIG_B64}" | base64 -d > ~/.kube/config
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_STAGING_B64 }}
+
+      - name: Apply Istio canary objects
+        run: |
+          kubectl -n $NAMESPACE apply -f k8s/istio/destinationrule.yaml
+          kubectl -n $NAMESPACE apply -f k8s/istio/virtualservice.yaml
+
+      - name: Create stable & canary deployments (separate)
+        run: |
+          # stable
+          kubectl -n $NAMESPACE apply -f k8s/istio/backend-stable-deployment.yaml
+          kubectl -n $NAMESPACE set image deployment/credit-backend-stable api=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.event.inputs.stable_tag }}
+
+          # canary
+          kubectl -n $NAMESPACE apply -f k8s/istio/backend-canary-deployment.yaml
+          kubectl -n $NAMESPACE set image deployment/credit-backend-canary api=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.event.inputs.canary_tag }}
+
+      - name: Shift traffic gradually
+        run: |
+          set -e
+          for W in "${{ github.event.inputs.start_weight }}" 25 50 100; do
+            echo "Setting canary weight to $W%"
+            sed "s/__CANARY_WEIGHT__/$W/g; s/__STABLE_WEIGHT__/$((100-W))/g" k8s/istio/virtualservice.tpl.yaml > /tmp/virtualservice.yaml
+            kubectl -n $NAMESPACE apply -f /tmp/virtualservice.yaml
+
+            echo "Wait 30s and run smoke check"
+            sleep 30
+            if [ -n "${{ secrets.STAGING_HOST }}" ]; then
+              curl -fsS "http://${{ secrets.STAGING_HOST }}/api/health"
+            else
+              echo "STAGING_HOST not set; skipping external check."
+            fi
+          done
+
+      - name: Finalize (scale down canary after 100%)
+        run: |
+          kubectl -n $NAMESPACE scale deployment/credit-backend-canary --replicas=0

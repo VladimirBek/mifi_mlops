@@ -1,0 +1,27 @@
+stages:
+  prepare:
+    cmd: python -m src.data.make_dataset --raw-path data/raw/default_credit.xls --processed-path data/processed/credit.csv
+    params:
+      - prepare.sample_rows
+    outs:
+      - data/raw/default_credit.xls
+      - data/processed/credit.csv
+
+  validate:
+    cmd: python -m src.data.validation --data-path data/processed/credit.csv --suite-path data/expectations/credit_suite.json
+    deps:
+      - data/processed/credit.csv
+      - data/expectations/credit_suite.json
+
+  train:
+    cmd: python -m src.models.train --data-path data/processed/credit.csv --model-path models/model.joblib
+    params:
+      - train.test_size
+      - train.random_state
+      - train.n_iter_search
+    deps:
+      - data/processed/credit.csv
+      - src/models/train.py
+      - src/models/pipeline.py
+    outs:
+      - models/model.joblib

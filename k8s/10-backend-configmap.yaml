@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: credit-backend-config
+  namespace: credit-scoring
+data:
+  MODEL_PATH: "/app/models/model.joblib"
+  APP_ENV: "staging"

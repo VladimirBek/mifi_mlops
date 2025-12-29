@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-drift-api
+  namespace: credit-scoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-drift-api
+  template:
+    metadata:
+      labels:
+        app: credit-drift-api
+    spec:
+      containers:
+        - name: drift-api
+          image: credit-backend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DRIFT_METRICS_PATH
+              value: /shared/drift_summary.json
+          command: ["uvicorn", "src.monitoring.drift_api:app", "--host", "0.0.0.0", "--port", "8001"]
+          ports:
+            - containerPort: 8001
+          volumeMounts:
+            - name: drift-vol
+              mountPath: /shared
+      volumes:
+        - name: drift-vol
+          persistentVolumeClaim:
+            claimName: credit-drift-pvc

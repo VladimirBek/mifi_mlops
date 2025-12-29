@@ -1,0 +1,71 @@
+name: Deploy to Staging
+
+on:
+  workflow_run:
+    workflows: ["Build and Test"]
+    types: [completed]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}-backend
+  FRONTEND_IMAGE: ${{ github.repository }}-frontend
+  NAMESPACE: credit-scoring
+
+jobs:
+  deploy:
+    if: ${{ (github.event_name == 'workflow_dispatch') || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare kubeconfig (staging)
+        run: |
+          mkdir -p ~/.kube
+          echo "${KUBECONFIG_B64}" | base64 -d > ~/.kube/config
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_STAGING_B64 }}
+
+      - name: Ensure namespace
+        run: |
+          kubectl apply -f k8s/00-namespace.yaml
+
+      - name: Create/update image pull secret (GHCR)
+        run: |
+          kubectl -n $NAMESPACE create secret docker-registry ghcr-pull             --docker-server=ghcr.io             --docker-username="${{ secrets.GHCR_USERNAME }}"             --docker-password="${{ secrets.GHCR_TOKEN }}"             --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n $NAMESPACE patch serviceaccount default -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}' || true
+
+      - name: Deploy manifests (backend + frontend)
+        run: |
+          kubectl apply -f k8s/10-backend-configmap.yaml
+          kubectl apply -f k8s/11-backend-secret.yaml
+          kubectl apply -f k8s/20-backend-deployment.yaml
+          kubectl apply -f k8s/21-backend-service.yaml
+          kubectl apply -f k8s/22-backend-ingress.yaml
+          kubectl apply -f k8s/30-frontend-deployment.yaml
+          kubectl apply -f k8s/31-frontend-service.yaml
+          kubectl apply -f k8s/32-frontend-ingress.yaml
+
+      - name: Set images to current commit SHA
+        run: |
+          kubectl -n $NAMESPACE set image deployment/credit-backend api=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          kubectl -n $NAMESPACE set image deployment/credit-frontend web=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n $NAMESPACE rollout status deployment/credit-backend --timeout=180s
+          kubectl -n $NAMESPACE rollout status deployment/credit-frontend --timeout=180s
+
+      - name: Monitor (smoke checks)
+        run: |
+          kubectl -n $NAMESPACE get pods -o wide
+          kubectl -n $NAMESPACE get svc
+          kubectl -n $NAMESPACE get ingress
+          # If you have a public host, set STAGING_HOST secret and check /health
+          if [ -n "${{ secrets.STAGING_HOST }}" ]; then
+            curl -fsS "http://${{ secrets.STAGING_HOST }}/api/health"
+          else
+            echo "STAGING_HOST is not set; skipping external HTTP check."
+          fi
