@@ -4,7 +4,7 @@ __pycache__/
 mlruns/
 data/raw/
 data/processed/
-models/
+/models/
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !models/.gitkeep
