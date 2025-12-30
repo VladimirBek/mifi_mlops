@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # ---------- DVC stage ----------
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim AS dvc
 
 WORKDIR /app
 
@@ -31,13 +31,11 @@ COPY data/expectations ./data/expectations
 # Create dirs expected by pipeline
 RUN mkdir -p data/raw data/processed models
 
-# Run DVC pipeline to produce data + model.
-# This downloads UCI dataset during build (internet required).
-# If DVC fails (e.g., no internet), build will fail — это нормально для учебного проекта.
-RUN dvc repro --no-scm
+
+RUN dvc repro --no-commit
 
 # ---------- Runtime stage ----------
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
