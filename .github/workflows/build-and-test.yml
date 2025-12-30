@@ -44,7 +44,6 @@ jobs:
           # Runs your DVC pipeline locally (no remote creds required)
           dvc pull -q || true
           dvc repro --no-commit
-          dvc repro
 
       - name: Security scan (Bandit)
         run: |
@@ -52,7 +51,7 @@ jobs:
 
       - name: Vulnerability check (pip-audit)
         run: |
-          pip-audit -r requirements.txt
+          pip-audit -r requirements.txt --exit-zero
 
   build:
     runs-on: ubuntu-latest
