@@ -51,7 +51,7 @@ jobs:
 
       - name: Vulnerability check (pip-audit)
         run: |
-          pip-audit -r requirements.txt --exit-zero
+          pip-audit -r requirements.txt || true
 
   build:
     runs-on: ubuntu-latest
