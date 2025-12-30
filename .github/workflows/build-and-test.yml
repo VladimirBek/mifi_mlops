@@ -103,6 +103,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Normalize image names
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@0.28.0
@@ -116,7 +119,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ github.sha }}
           format: table
           ignore-unfixed: true
           severity: CRITICAL,HIGH
@@ -126,7 +129,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ github.sha }}
           format: table
           ignore-unfixed: true
           severity: CRITICAL,HIGH
