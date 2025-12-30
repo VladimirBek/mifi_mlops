@@ -73,7 +73,9 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      - name: Normalize image names
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build & push backend
         uses: docker/build-push-action@v6
@@ -82,8 +84,8 @@ jobs:
           file: Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:latest
 
       - name: Build & push frontend
         uses: docker/build-push-action@v6
@@ -92,8 +94,8 @@ jobs:
           file: frontend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:latest
 
   trivy:
     runs-on: ubuntu-latest
