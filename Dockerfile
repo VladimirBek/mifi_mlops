@@ -32,7 +32,7 @@ COPY data/expectations ./data/expectations
 RUN mkdir -p data/raw data/processed models
 
 
-RUN dvc repro --no-commit
+RUN dvc config core.no_scm true --local && dvc repro --no-commit
 
 # ---------- Runtime stage ----------
 FROM python:3.11-slim
