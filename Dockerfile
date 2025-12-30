@@ -2,7 +2,7 @@
 # Multi-stage: builder -> dvc (dvc repro) -> runtime
 
 # ---------- Build stage ----------
-FROM python:3.9-slim AS builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # ---------- DVC stage ----------
-FROM python:3.9-slim AS dvc
+FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
